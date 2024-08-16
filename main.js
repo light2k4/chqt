@@ -20,20 +20,28 @@ app.get('/chat', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-  console.log('a user connected');
-  
-  socket.on('set user', (user) => {
-    socket.username = user.username;
-    socket.color = user.color;
-  });
-
-  socket.on('chat message', (msg) => {
-    io.emit('chat message', {
-      username: socket.username,
-      color: socket.color,
-      message: msg
+    console.log('a user connected');
+    
+    socket.on('set user', (user) => {
+      socket.username = user.username;
+      socket.color = user.color;
     });
-  });
+  
+    socket.on('chat message', (msg) => {
+      io.emit('chat message', {
+        username: socket.username,
+        color: socket.color,
+        message: msg // Ensure this is a string
+      });
+    });
+  
+    socket.on('image message', (data) => {
+      io.emit('image message', {
+        username: socket.username,
+        color: socket.color,
+        image: data.image // Ensure this is the image data
+      });
+    });
 
   socket.on('disconnect', () => {
     console.log('user disconnected');
