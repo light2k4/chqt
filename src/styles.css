@@ -73,6 +73,8 @@ body {
     padding: 8px;
     border-radius: 4px;
     max-width: 80%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .message.user-message {

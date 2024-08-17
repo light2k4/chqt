@@ -63,8 +63,12 @@ io.on('connection', (socket) => {
 
     socket.on('chat message', (msg) => {
         const logEntry = `Identifier: ${userIdentifier}, Username: ${socket.username}, Message: ${msg}\n`;
-        logToFile(MESSAGE_LOG_FILE, logEntry);
-        io.emit('chat message', { message: msg, username: socket.username, color: socket.color });
+        if (msg.length > 250) {
+            socket.emit('error message', 'Message too long. Maximum length is 250 characters.');
+        } else {
+            logToFile(MESSAGE_LOG_FILE, logEntry);
+            io.emit('chat message', { message: msg, username: socket.username, color: socket.color });
+        }
     });
 
     socket.on('image message', (data) => {

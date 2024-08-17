@@ -21,6 +21,7 @@ function enableChat() {
     userInput.disabled = false;
     sendBtn.disabled = false;
     imageInput.disabled = false;
+    voiceBtn.disabled = false;
 }
 
 // Function to set a cookie
@@ -132,10 +133,18 @@ cancelImageBtn.addEventListener('click', () => {
 function sendMessage() {
     const message = userInput.value;
     if (message.trim()) {
-        socket.emit('chat message', message); // Send message as a string
-        userInput.value = '';
+        if (message.length > 250) {
+            alert('Message too long. Maximum length is 250 characters.');
+        } else {
+            socket.emit('chat message', message);
+            userInput.value = '';
+        }
     }
 }
+
+socket.on('error message', (errorMsg) => {
+    alert(errorMsg);
+});
 
 socket.on('chat message', (data) => {
     const messageElement = document.createElement('div');
@@ -179,17 +188,9 @@ socket.on('image message', (data) => {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 });
 
-
 const voiceBtn = document.getElementById('voice-btn');
 let mediaRecorder;
 let audioChunks = [];
-
-function enableChat() {
-    userInput.disabled = false;
-    sendBtn.disabled = false;
-    imageInput.disabled = false;
-    voiceBtn.disabled = false;
-}
 
 voiceBtn.addEventListener('click', async () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
@@ -245,5 +246,3 @@ socket.on('voice message', (data) => {
     chatWindow.appendChild(messageElement);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 });
-
-
