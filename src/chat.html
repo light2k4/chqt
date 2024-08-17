@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chqt</title>
     <link rel="stylesheet" href="/styles.css">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@nolanlawson/emoji-picker-element@1.0.0/dist/emoji-picker-element.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.0.7/dist/compressor.min.js"></script>
 </head>
 <body>
@@ -14,13 +13,12 @@
             <h2>Chqt</h2>
         </div>
         <div class="user-settings">
-            <input type="text" id="username" placeholder="Entrez votre pseudo">
+            <input type="text" id="username" placeholder="Entrez votre pseudo" autocomplete="username">
             <input type="color" id="color" value="#000000">
             <button id="join-btn">Join Chat</button>
         </div>
         <div class="chat-window" id="chat-window"></div>
         <div class="chat-input">
-            <emoji-picker id="emoji-picker"></emoji-picker>
             <button id="voice-btn" class="voice-btn" disabled>🎤</button>
             <input type="text" id="user-input" placeholder="Écrivez votre message..." disabled>
             <input type="file" id="image-input" accept="image/*" disabled>

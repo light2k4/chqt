@@ -1,47 +1,50 @@
 const socket = io();
 
-const chatWindow = document.getElementById('chat-window');
-const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
-const usernameInput = document.getElementById('username');
-const colorInput = document.getElementById('color');
-const joinBtn = document.getElementById('join-btn');
-const emojiPicker = document.getElementById('emoji-picker');
-const imageInput = document.getElementById('image-input');
-const imagePreviewContainer = document.getElementById('image-preview-container');
-const imagePreview = document.getElementById('image-preview');
-const cancelImageBtn = document.getElementById('cancel-image-btn');
-const imageFullscreenContainer = document.getElementById('image-fullscreen-container');
-const fullscreenImage = document.getElementById('fullscreen-image');
-const closeFullscreen = document.getElementById('close-fullscreen');
+const elements = {
+    chatWindow: document.getElementById('chat-window'),
+    userInput: document.getElementById('user-input'),
+    sendBtn: document.getElementById('send-btn'),
+    usernameInput: document.getElementById('username'),
+    colorInput: document.getElementById('color'),
+    joinBtn: document.getElementById('join-btn'),
+    emojiPicker: document.getElementById('emoji-picker'),
+    imageInput: document.getElementById('image-input'),
+    imagePreviewContainer: document.getElementById('image-preview-container'),
+    imagePreview: document.getElementById('image-preview'),
+    cancelImageBtn: document.getElementById('cancel-image-btn'),
+    imageFullscreenContainer: document.getElementById('image-fullscreen-container'),
+    fullscreenImage: document.getElementById('fullscreen-image'),
+    closeFullscreen: document.getElementById('close-fullscreen'),
+    voiceBtn: document.getElementById('voice-btn')
+};
 
 let selectedImage = null;
+let mediaRecorder;
+let audioChunks = [];
 
+// Enable chat inputs
 function enableChat() {
-    userInput.disabled = false;
-    sendBtn.disabled = false;
-    imageInput.disabled = false;
-    voiceBtn.disabled = false;
+    elements.userInput.disabled = false;
+    elements.sendBtn.disabled = false;
+    elements.imageInput.disabled = false;
+    elements.voiceBtn.disabled = false;
 }
 
-// Function to set a cookie
+// Set a cookie
 function setCookie(name, value, days) {
     const d = new Date();
     d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
     const expires = "expires=" + d.toUTCString();
-    document.cookie = name + "=" + value + ";" + expires + ";path=/";
+    document.cookie = `${name}=${value};${expires};path=/`;
 }
 
-// Function to get a cookie
+// Get a cookie
 function getCookie(name) {
-    const cname = name + "=";
+    const cname = `${name}=`;
     const decodedCookie = decodeURIComponent(document.cookie);
     const ca = decodedCookie.split(';');
-    for (let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) === ' ') {
-            c = c.substring(1);
-        }
+    for (let c of ca) {
+        c = c.trim();
         if (c.indexOf(cname) === 0) {
             return c.substring(cname.length, c.length);
         }
@@ -49,63 +52,55 @@ function getCookie(name) {
     return "";
 }
 
-joinBtn.addEventListener('click', () => {
-    const username = usernameInput.value;
-    const color = colorInput.value;
+// Join chat
+elements.joinBtn.addEventListener('click', () => {
+    const username = elements.usernameInput.value;
+    const color = elements.colorInput.value;
     if (username.trim()) {
         socket.emit('set user', { username, color });
         enableChat();
-
-        // Set cookies for username and color
         setCookie('username', username, 30);
         setCookie('color', color, 30);
     }
 });
 
+// Load saved username and color from cookies
 document.addEventListener('DOMContentLoaded', () => {
     const savedUsername = getCookie('username');
     const savedColor = getCookie('color');
-    if (savedUsername) {
-        usernameInput.value = savedUsername;
-    }
-    if (savedColor) {
-        colorInput.value = savedColor;
-    }
+    if (savedUsername) elements.usernameInput.value = savedUsername;
+    if (savedColor) elements.colorInput.value = savedColor;
 });
 
-sendBtn.addEventListener('click', () => {
+// Send message
+elements.sendBtn.addEventListener('click', () => {
     if (selectedImage) {
-        socket.emit('image message', { image: selectedImage, username: usernameInput.value, color: colorInput.value });
+        socket.emit('image message', { image: selectedImage, username: elements.usernameInput.value, color: elements.colorInput.value });
         selectedImage = null;
-        imagePreviewContainer.style.display = 'none';
+        elements.imagePreviewContainer.style.display = 'none';
     } else {
         sendMessage();
     }
 });
 
-userInput.addEventListener('keypress', (event) => {
-    if (event.key === 'Enter') {
-        sendMessage();
-    }
+elements.userInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') sendMessage();
 });
 
-emojiPicker.addEventListener('emoji-click', (event) => {
-    userInput.value += event.detail.unicode;
-});
-
-imageInput.addEventListener('change', () => {
-    const file = imageInput.files[0];
+// Handle image input
+elements.imageInput.addEventListener('change', () => {
+    const file = elements.imageInput.files[0];
     if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            selectedImage = reader.result;
+            elements.imagePreview.src = selectedImage;
+            elements.imagePreviewContainer.style.display = 'flex';
+        };
         if (file.size > 1 * 1024 * 1024) { // 1 MB
             new Compressor(file, {
                 quality: 0.6,
                 success(result) {
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                        selectedImage = reader.result;
-                        imagePreview.src = selectedImage;
-                        imagePreviewContainer.style.display = 'flex';
-                    };
                     reader.readAsDataURL(result);
                 },
                 error(err) {
@@ -113,69 +108,68 @@ imageInput.addEventListener('change', () => {
                 },
             });
         } else {
-            const reader = new FileReader();
-            reader.onload = () => {
-                selectedImage = reader.result;
-                imagePreview.src = selectedImage;
-                imagePreviewContainer.style.display = 'flex';
-            };
             reader.readAsDataURL(file);
         }
     }
 });
 
-cancelImageBtn.addEventListener('click', () => {
+// Cancel image
+elements.cancelImageBtn.addEventListener('click', () => {
     selectedImage = null;
-    imagePreviewContainer.style.display = 'none';
-    imageInput.value = '';
+    elements.imagePreviewContainer.style.display = 'none';
+    elements.imageInput.value = '';
 });
 
+// Send text message
 function sendMessage() {
-    const message = userInput.value;
+    const message = elements.userInput.value;
     if (message.trim()) {
         if (message.length > 250) {
             alert('Message too long. Maximum length is 250 characters.');
         } else {
             socket.emit('chat message', message);
-            userInput.value = '';
+            elements.userInput.value = '';
         }
     }
 }
 
+// Handle error message
 socket.on('error message', (errorMsg) => {
     alert(errorMsg);
 });
 
+// Handle chat message
 socket.on('chat message', (data) => {
     const messageElement = document.createElement('div');
-    messageElement.classList.add('message', data.username === usernameInput.value ? 'user-message' : 'bot-message');
+    messageElement.classList.add('message', data.username === elements.usernameInput.value ? 'user-message' : 'bot-message');
     messageElement.textContent = `${data.username}: ${data.message}`;
     messageElement.style.color = data.color;
-    chatWindow.appendChild(messageElement);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    elements.chatWindow.appendChild(messageElement);
+    elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
 });
 
-closeFullscreen.addEventListener('click', () => {
-    imageFullscreenContainer.style.display = 'none';
-    fullscreenImage.src = '';
+// Close fullscreen image
+elements.closeFullscreen.addEventListener('click', () => {
+    elements.imageFullscreenContainer.style.display = 'none';
+    elements.fullscreenImage.src = '';
 });
 
+// Show fullscreen image
 function showFullscreenImage(src) {
-    fullscreenImage.src = src;
-    imageFullscreenContainer.style.display = 'flex';
+    elements.fullscreenImage.src = src;
+    elements.imageFullscreenContainer.style.display = 'flex';
 }
 
+// Handle image message
 socket.on('image message', (data) => {
     const messageElement = document.createElement('div');
-    messageElement.classList.add('message', data.username === usernameInput.value ? 'user-message' : 'bot-message');
+    messageElement.classList.add('message', data.username === elements.usernameInput.value ? 'user-message' : 'bot-message');
 
-    // Username display
     const usernameElement = document.createElement('div');
     usernameElement.textContent = `${data.username}:`;
     usernameElement.style.color = data.color;
     usernameElement.style.fontWeight = 'bold';
 
-    // Image display
     const img = document.createElement('img');
     img.src = data.image;
     img.style.maxWidth = '100%';
@@ -184,15 +178,12 @@ socket.on('image message', (data) => {
 
     messageElement.appendChild(usernameElement);
     messageElement.appendChild(img);
-    chatWindow.appendChild(messageElement);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    elements.chatWindow.appendChild(messageElement);
+    elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
 });
 
-const voiceBtn = document.getElementById('voice-btn');
-let mediaRecorder;
-let audioChunks = [];
-
-voiceBtn.addEventListener('click', async () => {
+// Handle voice message
+elements.voiceBtn.addEventListener('click', async () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
         return;
@@ -218,19 +209,20 @@ voiceBtn.addEventListener('click', async () => {
             })
                 .then(response => response.json())
                 .then(data => {
-                    socket.emit('voice message', { voicePath: data.filePath, username: usernameInput.value, color: colorInput.value });
-                    voiceBtn.textContent = '🎤'; // Reset the button text to 🎤
+                    socket.emit('voice message', { voicePath: data.filePath, username: elements.usernameInput.value, color: elements.colorInput.value });
+                    elements.voiceBtn.textContent = '🎤'; // Reset the button text to 🎤
                 });
         };
     }
 
     mediaRecorder.start();
-    voiceBtn.textContent = '🛑 Stop';
+    elements.voiceBtn.textContent = '🛑 Stop';
 });
 
+// Handle voice message
 socket.on('voice message', (data) => {
     const messageElement = document.createElement('div');
-    messageElement.classList.add('message', data.username === usernameInput.value ? 'user-message' : 'bot-message');
+    messageElement.classList.add('message', data.username === elements.usernameInput.value ? 'user-message' : 'bot-message');
 
     const usernameElement = document.createElement('div');
     usernameElement.textContent = `${data.username}:`;
@@ -243,6 +235,6 @@ socket.on('voice message', (data) => {
 
     messageElement.appendChild(usernameElement);
     messageElement.appendChild(audioElement);
-    chatWindow.appendChild(messageElement);
-    chatWindow.scrollTop = chatWindow.scrollHeight;
+    elements.chatWindow.appendChild(messageElement);
+    elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
 });
