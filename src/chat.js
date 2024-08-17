@@ -95,13 +95,31 @@ emojiPicker.addEventListener('emoji-click', (event) => {
 imageInput.addEventListener('change', () => {
     const file = imageInput.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = () => {
-            selectedImage = reader.result;
-            imagePreview.src = selectedImage;
-            imagePreviewContainer.style.display = 'flex';
-        };
-        reader.readAsDataURL(file);
+        if (file.size > 1 * 1024 * 1024) { // 1 MB
+            new Compressor(file, {
+                quality: 0.6,
+                success(result) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        selectedImage = reader.result;
+                        imagePreview.src = selectedImage;
+                        imagePreviewContainer.style.display = 'flex';
+                    };
+                    reader.readAsDataURL(result);
+                },
+                error(err) {
+                    console.error('Error compressing image:', err);
+                },
+            });
+        } else {
+            const reader = new FileReader();
+            reader.onload = () => {
+                selectedImage = reader.result;
+                imagePreview.src = selectedImage;
+                imagePreviewContainer.style.display = 'flex';
+            };
+            reader.readAsDataURL(file);
+        }
     }
 });
 
