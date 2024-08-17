@@ -11,6 +11,9 @@ const imageInput = document.getElementById('image-input');
 const imagePreviewContainer = document.getElementById('image-preview-container');
 const imagePreview = document.getElementById('image-preview');
 const cancelImageBtn = document.getElementById('cancel-image-btn');
+const imageFullscreenContainer = document.getElementById('image-fullscreen-container');
+const fullscreenImage = document.getElementById('fullscreen-image');
+const closeFullscreen = document.getElementById('close-fullscreen');
 
 let selectedImage = null;
 
@@ -125,6 +128,16 @@ socket.on('chat message', (data) => {
     chatWindow.scrollTop = chatWindow.scrollHeight;
 });
 
+closeFullscreen.addEventListener('click', () => {
+    imageFullscreenContainer.style.display = 'none';
+    fullscreenImage.src = '';
+});
+
+function showFullscreenImage(src) {
+    fullscreenImage.src = src;
+    imageFullscreenContainer.style.display = 'flex';
+}
+
 socket.on('image message', (data) => {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', data.username === usernameInput.value ? 'user-message' : 'bot-message');
@@ -140,6 +153,7 @@ socket.on('image message', (data) => {
     img.src = data.image;
     img.style.maxWidth = '100%';
     img.style.maxHeight = '300px';
+    img.addEventListener('click', () => showFullscreenImage(data.image));
 
     messageElement.appendChild(usernameElement);
     messageElement.appendChild(img);
@@ -213,3 +227,5 @@ socket.on('voice message', (data) => {
     chatWindow.appendChild(messageElement);
     chatWindow.scrollTop = chatWindow.scrollHeight;
 });
+
+
